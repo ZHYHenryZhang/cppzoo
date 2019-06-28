@@ -53,10 +53,20 @@ def compute_weight(dataMatrix, dataHomo, line_param):
   weight_normed = weight / np.sum(weight) # np.linalg.norm(weight)
   return weight_normed
 
+def reject_outliers(dataMatrix, dataHomo, line_param_weighted, weight):
+  diff_weighted = np.abs( np.matmul( dataMatrix, np.array( [[1, line_param_weighted[0]]] ).T ) - line_param_weighted[1] ) * weight / sum_w
+  diff_weight_index = np.argsort(diff_weighted)
+  return dataMatrix[diff_weight_index,:], dataHomo[diff_weight_index,:]
 
-
-def fit_ls_weighted(dataMatrix, dataHomo, line_param):
+def fit_line(dataMatrix, dataHomo, line_param):
   weight = compute_weight(dataMatrix, dataHomo, line_param)
+  line_param_weighted, error_weighted = fit_ls_weighted(dataMatrix, dataHomo, weight)
+  dataMatrixPart, dataHomoPart = reject_outliers(dataMatrix, dataHomo, line_param_weighted, weight)
+  weightPart = compute_weight(dataMatrixPart, dataHomoPart, line_param_weighted)
+  line_param_final, error_final = fit_ls_weighted(dataMatrixPart, dataHomoPart, weightPart)
+  return line_param_final, error_final
+
+def fit_ls_weighted(dataMatrix, dataHomo, weight):
   sum_wx = 0
   sum_wy = 0
   sum_wxy = 0
@@ -110,7 +120,7 @@ def main():
   # line_param = np.array([line_slope, line_intercept])
   print("error", error)
   
-  line_param_weighted, error_weighted = fit_ls_weighted(dataMatrix, dataHomo, line_param)
+  line_param_weighted, error_weighted = fit_line(dataMatrix, dataHomo, line_param)
   print("error_weighted", error_weighted)
   vis(dataMatrix, line_param, line_param_weighted)
 
